@@ -1,21 +1,20 @@
 import sys
 import os
 
-
 op_codes = {
-    "add": "000000",
-    "sub": "000000",
-    "and:": "000000",
-    "or:": "000000",
-    "slt": "000000",
-    "lw": "100011",
-    "sw": "101011",
-    "beq": "000100",
-    "bne": "000100",
-
+    "sum": "000001",
+    "dif": "000001",
+    "conj": "000001",
+    "disj": "000001",
+    "less": "000001",
+    "grab": "100100",
+    "save": "101100",
+    "when": "000110",
+    "skip": "000111",
+    "bump": "001001",
+    
     "pwr": "000000",
     "log": "000000",
-
     "dom": "111111",
     "maro": "101101",
     "ucl": "111000",
@@ -25,16 +24,17 @@ op_codes = {
     "int": "010101",
     "lfc": "010010",
 }
-func_codes = {
-    "add": "100000",
-    "sub": "100010",
-    "and:": "100100",
-    "or:": "100101",
-    "slt": "101010",
 
+func_codes = {
+    "sum": "100000",
+    "dif": "100010",
+    "conj": "100100",
+    "disj": "100101",
+    "less": "101010",
     "pwr": "000000",
     "log": "100001",
 }
+
 registers = {
     "$zero": "00000",
     "$t0": "01000",
@@ -54,16 +54,22 @@ registers = {
     "$s6": "10110",
     "$s7": "10111",
 }
+
 shift_logic_amount = "00000"
 
-
-def interpret_line(mips_file: str):
+def interpret_line(mips_file: str, output_file: str = "AssemblerOutput.txt"):
     input_file = open(mips_file, "r")
-    output_file = open("AssemblerOutput.txt", "w")
+    output_file = open(output_file, "w")
+    binary_output = ""
+    
     for instruction in input_file:
-        bin = assemble(instruction)
-        output_file.write(bin)
-
+        bin_instr = assemble(instruction)
+        binary_output += bin_instr
+    
+    output_file.write(binary_output)
+    output_file.close()
+    input_file.close()
+    return binary_output
 
 def assemble(line):
     line = line.split("#")[0].strip()
@@ -71,37 +77,67 @@ def assemble(line):
         return ""
 
     parts = line.split()
-    op_code = parts[0]
+    op_code = parts[0].lower()
 
     if op_code in func_codes:
-        rd = parts[1].replace(",", "")
-        rs = parts[2].replace(",", "")
-        rt = parts[3].replace(",", "")
-        return (
-            op_codes[op_code]
-            + registers[rs]
-            + registers[rt]
-            + registers[rd]
-            + shift_logic_amount
-            + func_codes[op_code]
-        )
+        if len(parts) >= 4:
+            rd = parts[1].replace(",", "")
+            rs = parts[2].replace(",", "")
+            rt = parts[3].replace(",", "")
+            return (
+                op_codes[op_code]
+                + registers[rs]
+                + registers[rt]
+                + registers[rd]
+                + shift_logic_amount
+                + func_codes[op_code]
+            )
+        else:
+            return "ERROR: Invalid instruction format for " + op_code
 
-    elif op_code in ["lw", "sw"]:
-        rt = parts[1].replace(",", "")
-        offset, rs = parts[2].replace(")", "").split("(")
-        offset_bin = bin(int(offset)).replace("0b", "").zfill(16)
-        return op_codes[op_code] + registers[rs] + registers[rt] + offset_bin
-
-    elif op_code in ["beq", "bne"]:
-        rs = parts[1].replace(",", "")
-        rt = parts[2].replace(",", "")
-        offset = parts[3].replace(",", "")
-        offset_bin = bin(int(offset)).replace("0b", "").zfill(16)
-        return op_codes[op_code] + registers[rs] + registers[rt] + offset_bin
+    elif op_code in ["grab", "save"]:
+        if len(parts) >= 3:
+            rt = parts[1].replace(",", "")
+            offset_reg = parts[2].replace(")", "")
+            offset, rs = offset_reg.split("(")
+            offset_bin = bin(int(offset)).replace("0b", "").zfill(16)
+            return op_codes[op_code] + registers[rs] + registers[rt] + offset_bin
+        else:
+            return "ERROR: Invalid instruction format for " + op_code
+            
+    elif op_code in ["when", "skip"]:
+        if len(parts) >= 4:
+            rs = parts[1].replace(",", "")
+            rt = parts[2].replace(",", "")
+            offset = parts[3].replace(",", "")
+            offset_bin = bin(int(offset)).replace("0b", "").zfill(16)
+            return op_codes[op_code] + registers[rs] + registers[rt] + offset_bin
+        else:
+            return "ERROR: Invalid instruction format for " + op_code
+            
+    elif op_code == "bump":
+        if len(parts) >= 4:
+            rt = parts[1].replace(",", "")
+            rs = parts[2].replace(",", "")
+            immediate = parts[3].replace(",", "")
+            immediate_bin = bin(int(immediate)).replace("0b", "").zfill(16)
+            return op_codes[op_code] + registers[rs] + registers[rt] + immediate_bin
+        else:
+            return "ERROR: Invalid instruction format for " + op_code
 
     elif op_code in op_codes:
         return op_codes[op_code] + "00000000000000000000000000"
-
+    
+    else:
+        return "ERROR: Unknown instruction " + op_code
 
 if __name__ == "__main__":
-    interpret_line("AssemblerInput.asm")
+    import sys
+    if len(sys.argv) > 1:
+        input_file = sys.argv[1]
+        output_file = "AssemblerOutput.txt"
+        if len(sys.argv) > 2:
+            output_file = sys.argv[2]
+        interpret_line(input_file, output_file)
+    else:
+        interpret_line("AssemblerInput.asm")

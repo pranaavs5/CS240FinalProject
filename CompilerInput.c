@@ -1,19 +1,30 @@
-#include <stdio.h>
+int i;
+int mod3;
+int mod5;
 
-int main() {
-    for (int i = 1; i <= 100; i++) {
-        if (i % 15 == 0) {
-            printf("FizzBuzz\n");
-        }
-        else if (i % 3 == 0) {
-            printf("Fizz\n");
-        }
-        else if (i % 5 == 0) {
-            printf("Buzz\n");
-        }
-        else {
-            printf("%d\n", i);
-        }
+i = 1;
+while (i <= 100) {
+    mod3 = i;
+    while (mod3 >= 3) {
+        mod3 = mod3 - 3;
     }
-    return 0;
+    
+    mod5 = i;
+    while (mod5 >= 5) {
+        mod5 = mod5 - 5;
+    }
+    
+    if (mod3 == 0 && mod5 == 0) {
+        printf("FizzBuzz\n");
+    } else if (mod3 == 0) {
+        printf("Fizz\n");
+    } else if (mod5 == 0) {
+        printf("Buzz\n");
+    } else {
+        printf("%d\n", i);
+    }
+    
+    i = i + 1;
 }
+
+return 0;
